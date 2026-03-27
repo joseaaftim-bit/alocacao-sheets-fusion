@@ -14,9 +14,10 @@ credentials.json
 # Ignore JSON files by default but EXEMPT essential project files
 *.json
 !package.json
-!package-lock.json
+package-lock.json
 !railway.json
 !nixpacks.toml
+
 # client_secret.json is ignored to avoid GitHub security blocks
 client_secret.json
 server/client_secret.json
