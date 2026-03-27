@@ -1,0 +1,31 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment & Credentials
+.env
+.env.local
+.env.production
+token.json
+credentials.json
+server/*.json
+*.json
+
+# Build & Output
+dist/
+.vite/
+cloudflared.exe
+*.exe
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test scripts
+test_*.cjs
+test_*.js

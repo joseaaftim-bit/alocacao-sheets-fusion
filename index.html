@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <title>Alocação de Recursos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  </head>
+  <body>
+    <!-- Background Animated Shapes -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <!-- Login Screen -->
+    <div id="login-view" class="login-container glass-panel">
+      <h2>Acesso ao Painel</h2>
+      <p class="subtitle" style="margin-bottom: 2rem; text-align: center;">Alocação Pro</p>
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label for="login-username">Usuário</label>
+        <input type="text" id="login-username" placeholder="admin ou viewer">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Senha</label>
+        <input type="password" id="login-password" placeholder="***">
+      </div>
+      <button id="btn-login" class="btn-primary" style="width: 100%; margin-top: 1.5rem;">Entrar</button>
+      <p id="login-error" style="color: #fca5a5; margin-top: 1rem; text-align: center; display: none;"></p>
+    </div>
+
+    <div id="app-wrapper" class="app-container glass-panel hidden">
+      <header class="header">
+        <div class="view-tabs">
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="tab-table" class="view-tab active">Mesa de Alocação</button>
+            <button id="tab-dashboard" class="view-tab">Dashboard</button>
+            <button id="tab-gantt" class="view-tab">Cronograma (Gantt)</button>
+            <button id="tab-projects" class="view-tab">Lista de Projetos</button>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <button id="btn-theme-toggle" class="btn-theme" title="Alternar Tema">☀️</button>
+            <button id="btn-sync-gsheets" class="btn-secondary btn-small" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">Sincronizar</button>
+            <button id="btn-export-csv" class="btn-secondary btn-small">CSV</button>
+            <button id="btn-export-pdf" class="btn-secondary btn-small">PDF</button>
+            <button id="btn-new-professional" class="btn-primary btn-small">+ Profissional</button>
+            <button id="btn-logout" class="btn-logout" title="Sair de @user">Sair</button>
+          </div>
+        </div>
+        <div class="header-main">
+          <div>
+            <h1>Controle de Alocação de Recursos</h1>
+            <p class="subtitle">Visão estratégica de times e projetos</p>
+          </div>
+        </div>
+        <div class="header-filters">
+          <div class="filter-group">
+            <label for="filter-start-month">Mês de Início</label>
+            <input type="month" id="filter-start-month" value="2026-03">
+          </div>
+          <div class="filter-group">
+            <label for="filter-duration">Duração (Meses)</label>
+            <input type="number" id="filter-duration" value="10" min="1" max="60">
+          </div>
+          <div class="filter-group">
+            <label for="filter-team">Time</label>
+            <select id="filter-team">
+              <option value="all">Todos os Times</option>
+              <option value="ATENA">Atena</option>
+              <option value="ZEUS">Zeus</option>
+              <option value="CRONOS">Cronos</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-role">Perfil / Cargo</label>
+            <select id="filter-role">
+              <option value="all">Todos os Perfis</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-project">Projeto / Módulo</label>
+            <input type="text" id="filter-project" placeholder="Ex: SUSTENTAÇÃO...">
+          </div>
+          <div class="filter-group">
+            <label for="search-input">Buscar</label>
+            <input type="text" id="search-input" placeholder="Buscar profissional...">
+          </div>
+        </div>
+      </header>
+
+      <main id="dashboard-view" class="dashboard-view hidden">
+        <div class="metrics-grid">
+          <div class="metric-card glass-panel">
+            <h3>Total de Profissionais</h3>
+            <p id="metric-total-pros" class="metric-value">0</p>
+          </div>
+          <div class="metric-card glass-panel">
+            <h3>Total de Projetos Distintos</h3>
+            <p id="metric-total-projects" class="metric-value">0</p>
+          </div>
+          <div class="metric-card glass-panel">
+            <h3>Taxa de Ocupação</h3>
+            <p id="metric-occupation" class="metric-value">0%</p>
+          </div>
+        </div>
+        
+        <div class="charts-grid">
+          <div class="chart-card glass-panel">
+            <h3>Profissionais por Time</h3>
+            <div class="canvas-container">
+              <canvas id="chartTeam"></canvas>
+            </div>
+          </div>
+          <div class="chart-card glass-panel">
+            <h3>Top 5 Projetos Mais Alocados</h3>
+            <div class="canvas-container">
+              <canvas id="chartProjects"></canvas>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <main id="gantt-view" class="gantt-view hidden">
+        <div id="gantt-container" style="display: flex; flex-direction: column; gap: 1rem;"></div>
+      </main>
+
+      <main id="projects-view" class="projects-view hidden">
+        <div class="metrics-grid" id="projects-metrics">
+          <div class="metric-card glass-panel">
+            <h3>Carga Horária Total (Portfólio)</h3>
+            <p id="metric-total-budget" class="metric-value">0 h</p>
+          </div>
+        </div>
+        <div class="table-wrapper" style="margin-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+             <h3 style="color: white; font-size: 1.25rem; margin: 0;">Catálogo de Projetos</h3>
+             <button id="btn-new-project" class="btn-primary">+ Novo Projeto</button>
+          </div>
+          <table id="projects-table">
+            <thead>
+              <tr>
+                <th style="width: 25%">NOME DO PROJETO</th>
+                <th style="width: 30%">ESCOPO</th>
+                <th style="width: 15%">DURAÇÃO</th>
+                <th style="width: 15%">HORAS TOTAIS</th>
+                <th style="width: 15%">AÇÕES</th>
+              </tr>
+            </thead>
+            <tbody id="projects-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      <main id="data-view" class="data-view">
+        <div class="table-wrapper">
+          <table id="allocation-table">
+            <thead>
+              <tr id="table-head-row">
+                <th class="sticky-col sticky-left-1">Time</th>
+                <th class="sticky-col sticky-left-2">Perfil</th>
+                <th class="sticky-col sticky-left-3">Profissional</th>
+                <!-- Meses serao inseridos via JS -->
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Linhas serao inseridas via JS -->
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modal for adding a new professional -->
+    <div id="add-modal" class="modal-backdrop hidden">
+      <div class="modal glass-panel">
+        <div class="modal-header">
+          <h2>Novo Profissional</h2>
+          <button id="close-add-modal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="new-name">Nome Completo</label>
+            <input type="text" id="new-name" placeholder="Ex: JANE DOE">
+          </div>
+          <div class="form-group">
+            <label for="new-role">Perfil / Cargo</label>
+            <input type="text" id="new-role" placeholder="Ex: DESENVOLVEDOR - PLENO">
+          </div>
+          <div class="form-group">
+            <label for="new-team">Time</label>
+            <select id="new-team">
+              <option value="ATENA">Atena</option>
+              <option value="ZEUS">Zeus</option>
+              <option value="CRONOS">Cronos</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-new-professional" class="btn-primary">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for editing allocation -->
+    <div id="edit-modal" class="modal-backdrop hidden">
+      <div class="modal glass-panel">
+        <div class="modal-header">
+          <h2>Editar Alocação</h2>
+          <button id="close-modal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="modal-context" class="modal-context"></p>
+          <div class="form-group">
+            <label for="edit-project-value">Projeto / Módulo Oficial</label>
+            <select id="edit-project-value">
+              <option value="">-- Selecione o Projeto Oficial --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button id="btn-batch-edit" class="btn-primary" style="background: rgba(255,255,255,0.1); color: var(--text-primary); box-shadow: none;">Replicar Adiante</button>
+          <button id="save-allocation" class="btn-primary">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Project Registration -->
+    <div id="project-modal" class="modal-backdrop hidden">
+      <div class="modal glass-panel">
+        <div class="modal-header">
+          <h2 id="project-modal-title">Novo Projeto</h2>
+          <button id="close-project-modal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="project-id-value">
+          <div class="form-group">
+            <label for="project-name-value">Nome / Código do Projeto</label>
+            <input type="text" id="project-name-value" placeholder="Ex: SPRINT B">
+          </div>
+          <div class="form-group">
+            <label for="project-scope-value">Escopo / Descrição</label>
+            <input type="text" id="project-scope-value" placeholder="Ex: Backend Migration">
+          </div>
+          <div class="form-group">
+            <label for="project-duration-value">Duração Máxima (Meses)</label>
+            <input type="number" id="project-duration-value" placeholder="Ex: 6">
+          </div>
+          <div class="form-group">
+            <label for="project-budget-value">Total de Horas</label>
+            <input type="number" id="project-budget-value" placeholder="Ex: 160">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-project" class="btn-primary">Salvar Projeto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden">Alocação salva com sucesso!</div>
+    
+    </div> <!-- End app-wrapper -->
+
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('SW Registered', reg.scope);
+          }).catch(err => {
+            console.log('SW Registration Failed', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
